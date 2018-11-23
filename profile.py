@@ -1,4 +1,10 @@
 import sqlite3
+import sys, getopt, random
+from base64 import b64encode, b64decode
+from Crypto.Protocol.KDF import PBKDF2
+from Crypto.Random import get_random_bytes
+from Crypto.Util.strxor import strxor
+import db
 
 class Profile:
     # Profile has 2 attributes: the hash(profile_name) and the database
@@ -6,18 +12,27 @@ class Profile:
     # In the database, profiles are queried by profile_name and each profile has two attributes: salt, authkey
 
     def __init__(self, profile_name):
-        self.profile_name_hash = hash(profile_name)
-        self.db = sqlite3.connect('password_manager.sqlite')
+        #self.profile_name_hash = hash(profile_name)
+        self.profile_name_hash = profile_name
+
+        self.database = db.Database()
+
+    def add_profile(self, pwd):
+
+        salt = get_random_bytes(8)
+        authkey = PBKDF2(pwd, salt)
+
+        # self.database.add_profile(profile_name_hash,salt,authkey)
+        self.database.add_profile(self.profile_name_hash,"salt","authkey")
+
 
     def exists(self):
-        return db[self.profile_name]
+        return self.database.exists(self.profile_name_hash)
 
-    def create_profile(self, pwd):
-        salt = get_random_bytes(8)
-        db[self.profile_name]["salt"] = salt
-        authkey = PBKDF2(pwd, salt)
-        db[self.profile_name]["authkey"] = authkey
+    def print_all(self):
+        self.database.print_all()
 
+'''
     def authenticate(self, pwd):
         salt = db[self.profile_name_hash]["salt"]
         authkey = PBKDF2(pwd, salt)
@@ -63,3 +78,4 @@ class Profile:
         # encrypt the plaintext
         dec_pwd = cipher.decrypt(plaintext)
         return dec_pwd
+'''

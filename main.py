@@ -1,16 +1,18 @@
 import pyperclip
 import random
+import getpass
+import profile
+from Crypto.Random import get_random_bytes
 
 
 def get_random_password():
     s = "abcdefghijklmnopqrstuvwxyz01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()?"
     passlen = 8
-    p =  "".join(random.sample(s,passlen))
+    p =  "".join(random.sample(s,passlen)) # cryptographically secure???
     return p
 
 
 
-# flowwwww
 print("\nWelcome to the Password Farm where we work from dawn to dusk to protect your passwords!")
 print("usage note: at any point type exit to quit out of the program")
 
@@ -24,15 +26,16 @@ except FileNotFoundError:
 '''
 
 profile_name = input("Enter your profile name: ")
-# profile = profile.Profile(username)
+profile = profile.Profile(profile_name)
 
-#if(not user.exists()):
-if(random.random() < 0.5):
+profile.print_all()
+
+if(not profile.exists()):
     print("A Profile with given username does not exist.")
     answer = input("Would you like to create a password management profile? (y or n)\n")
     if('y' in answer):
-        password = input("Enter the MASTER password for this profile: ")
-        # account.create_profile(password)
+        password = getpass.getpass("Enter the MASTER password for this profile: ")
+        profile.add_profile(password)
         password = get_random_bytes(len(password))
     else:
         sys.exit(2)
@@ -43,7 +46,7 @@ else:
     if(not authenticated):
         sys.exit(2)
 
-response = input("Would you like to add data for an account ('a') or retrieve a saved password ('r')?")
+response = input("Would you like to add data for an account ('a') or retrieve a saved password ('r')?\n")
 while(response != "exit"):
     if(response == 'a'):
         url = input("What is the URL for this account?")
