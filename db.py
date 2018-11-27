@@ -5,7 +5,7 @@ class Database:
 
     def __init__(self):
         self.db_file = 'profiles.sqlite'
-        self.table_name = 'users'
+        self.table_name = 'profiles'
         self.column_name_hash = 'profile_name_hash'
         self.column_salt = 'profile_salt'
         self.column_auth_key = 'authentication_key'
@@ -59,7 +59,7 @@ class Database:
         try:
             prof_file_ref_name = str(random.randrange(100000000, 999999999))+'.sqlite'
             self.create_profile_db(prof_file_ref_name)
-            c.execute("INSERT INTO users (profile_name_hash, profile_salt, authentication_key, profile_file_ref) VALUES (?, ?, ?, ?)", (name_hash, salt, auth_key, prof_file_ref_name))
+            c.execute("INSERT INTO profiles (profile_name_hash, profile_salt, authentication_key, profile_file_ref) VALUES (?, ?, ?, ?)", (name_hash, salt, auth_key, prof_file_ref_name))
             self.conn.commit()
             return True
         except sqlite3.IntegrityError:
