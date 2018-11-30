@@ -19,7 +19,7 @@ class Database:
         self.column_prof_username_hash = 'prof_username_hash'
         self.column_prof_salt = 'prof_salt'
         self.column_prof_nonce = 'prof_nonce'
-        self.column_prof_pwd_enc = 'prof_pwd_enc'
+        self.column_prof_enc_pwd = 'prof_pwd_enc'
 
         self.conn = sqlite3.connect(self.db_file)
         c = self.conn.cursor()
@@ -49,8 +49,7 @@ class Database:
 
     def print_all(self):
         c = self.conn.cursor()
-        c.execute('SELECT * FROM {tn} WHERE {cn}="salt"'.\
-        format(tn=self.table_name, cn=self.column_salt))
+        c.execute('SELECT * FROM profiles')
         all_rows = c.fetchall()
         print('DATA:', all_rows)
 
@@ -67,27 +66,27 @@ class Database:
             return False
 
     def set_active_profile(self,name_hash):
-        profile_name = get_account_ref(self,name_hash)
-        self.profile_conn = sqlite3.connect(profile_name)
+        file_ref = self.get_file_ref(name_hash)
+        self.profile_conn = sqlite3.connect(file_ref)
 
 # retrieval functions
-    def get_value_from_account(self,name_hash,column_name):
+    def get_value_from_profile(self,name_hash,column_name):
         if(self.exists(name_hash)):
             c = self.conn.cursor()
             c.execute('SELECT {cw} FROM {tn} WHERE {cn}="{nh}"'.\
             format(cw=column_name,tn=self.table_name,cn=self.column_name_hash,nh=name_hash))
-            return c.fetchone() #is this correct? (does not work when there are multiple accounts with the same prof ref... which there should never be)
+            return c.fetchone()[0] #is this correct? (does not work when there are multiple accounts with the same prof ref... which there should never be)
         else:
             raise ValueError('ERROR: no value for column' + column_name + " found under account hash "+name_hash)
 
     def get_salt(self, name_hash):
-        return self.get_value_from_account(name_hash,self.column_salt)
+        return self.get_value_from_profile(name_hash,self.column_salt)
 
     def get_authkey(self, name_hash):
-        return self.get_value_from_account(name_hash,self.column_auth_key)
+        return self.get_value_from_profile(name_hash,self.column_auth_key)
 
-    def get_account_ref(self, name_hash):
-        return self.get_value_from_account(name_hash,self.column_file_ref)
+    def get_file_ref(self, name_hash):
+        return self.get_value_from_profile(name_hash,self.column_file_ref)
 
     def exists(self, name_hash):
         c = self.conn.cursor()
@@ -125,7 +124,7 @@ class Database:
 
             # adding new column for enc(pwd)
             c.execute("ALTER TABLE {tn} ADD COLUMN {cn} {ct}"\
-            .format(tn=self.prof_table_name, cn=self.column_prof_pwd_enc, ct=self.field_type))
+            .format(tn=self.prof_table_name, cn=self.column_prof_enc_pwd, ct=self.field_type))
 
             print("table created")
         except:
@@ -144,6 +143,23 @@ class Database:
             print('ERROR: account already exists')
             return False
 
-    ''''def find_account_enc_pwd(self, URL_hash, username_hash):
-        c = self
-    def find_account_salt(self, URL_hash, username_hash)'''
+# account retrieval functions
+    def get_value_from_account(self,URL_hash, username_hash,column_name):
+        c = self.profile_conn.cursor()
+        c.execute('SELECT {cw} FROM {tn} WHERE {cn}="{nh}" AND {uh}="{cuh}"'.\
+        format(cw=column_name,tn=self.prof_table_name,cn=self.column_prof_URL_hash,nh=URL_hash,uh=self.column_prof_username_hash,cuh=username_hash))
+        output = c.fetchone();
+        if(output is not None):
+            return output[0] #is this correct? (does not work when there are multiple accounts with the same prof ref... which there should never be)
+        return None
+
+    def get_account_enc_pwd(self, URL_hash, username_hash):
+        return self.get_value_from_account(URL_hash,username_hash,self.column_prof_enc_pwd)
+
+
+    def get_account_salt(self, URL_hash, username_hash):
+        return self.get_value_from_account(URL_hash,username_hash,self.column_prof_salt)
+
+
+    def get_account_nonce(self, URL_hash, username_hash):
+        return self.get_value_from_account(URL_hash,username_hash,self.column_prof_nonce)
