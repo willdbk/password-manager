@@ -40,7 +40,6 @@ class Database:
             # adding file reference
             c.execute("ALTER TABLE {tn} ADD COLUMN {cn} {ct}"\
             .format(tn=self.table_name, cn=self.column_file_ref, ct=self.field_type))
-            print("table created")
         except:
             print("table already exists")
 
@@ -125,8 +124,6 @@ class Database:
             # adding new column for enc(pwd)
             c.execute("ALTER TABLE {tn} ADD COLUMN {cn} {ct}"\
             .format(tn=self.prof_table_name, cn=self.column_prof_enc_pwd, ct=self.field_type))
-
-            print("table created")
         except:
             print("table already exists")
 

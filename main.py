@@ -19,9 +19,17 @@ database = db.Database()
 
 def get_random_password():
     s = "abcdefghijklmnopqrstuvwxyz01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()?"
-    passlen = 8
+    passlen = 12
     p =  "".join(random.sample(s,passlen)) # cryptographically secure???
     return p
+
+def valid(pwd_str):
+    lc = set("abcdefghijklmnopqrstuvwxyz")
+    uc = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    nums = set("01234567890")
+    sc = set("!@#$%^&*()?")
+    pwd = set(pwd_str)
+    return len(pwd_str)>=8 and bool(lc & pwd) and bool(uc & pwd) and bool(nums & pwd) and bool(sc & pwd)
 
 def hash(str):
     h = SHA256.new()
@@ -49,8 +57,8 @@ def authenticate(pwd):
 # then pwd is then encrypted in CTR mode with the nonce
 def add_account(URL, username, pwd, master_password):
     #these references to the database aren't right
-    URL_hash = URL
-    username_hash = username
+    URL_hash = hash(URL)
+    username_hash = hash(username)
     salt = get_random_bytes(8)
     nonce = get_random_bytes(8)
 
@@ -61,23 +69,19 @@ def add_account(URL, username, pwd, master_password):
 
     # encrypt the plaintext
     enc_pwd = cipher.encrypt(pwd.encode('utf-8'))
-    database.add_account(URL_hash, username_hash, 'salt', 'nonce', enc_pwd)
+    database.add_account(URL_hash, username_hash, salt, nonce, enc_pwd)
 
 
 def retrieve_pwd(URL, username, master_password):
     #these references to the database aren't right
-    URL_hash = URL
-    username_hash = username
+    URL_hash = hash(URL)
+    username_hash = hash(username)
 
     salt = database.get_account_salt(URL_hash, username_hash)
-    print(salt)
     if(salt is None):
         return None
     nonce = database.get_account_nonce(URL_hash, username_hash)
-    print(nonce)
     enc_pwd = database.get_account_enc_pwd(URL_hash, username_hash)
-    print(enc_pwd)
-
 
     dec_key = PBKDF2(master_password, salt)
     # create a counter object and set the nonce as its prefix and set the initial counter value to 0
@@ -106,6 +110,9 @@ if(not database.exists(profile_name_hash)):
     answer = input("Would you like to create a password management profile? (y or n)\n")
     if('y' in answer):
         password = getpass.getpass("Enter the MASTER password for this profile: ")
+        while(not valid(password)):
+            print("Password does not meet specifications.")
+            password = getpass.getpass("Enter the MASTER password for this profile: ")
         add_profile(password)
         password = get_random_bytes(len(password))
     else:
@@ -131,8 +138,12 @@ while(response != "exit"):
         password = ""
         if(response == 'p'):
             password = getpass.getpass("Enter your password for this account:")
+            while(not valid(password)):
+                print("Password does not meet specifications.")
+                password = getpass.getpass("Enter your password for this account: ")
         elif(response == 'r'):
-            password = get_random_password()
+            while(not valid(password)):
+                password = get_random_password()
         master_password = getpass.getpass("Enter your MASTER password: ")
         authenticated = authenticate(master_password)
         if(not authenticated):
