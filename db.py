@@ -41,7 +41,7 @@ class Database:
             c.execute("ALTER TABLE {tn} ADD COLUMN {cn} {ct}"\
             .format(tn=self.table_name, cn=self.column_file_ref, ct=self.field_type))
         except:
-            print("table already exists")
+            x=0
 
         # committing changes and closing the connection
         self.conn.commit()

@@ -42,8 +42,6 @@ def add_profile(pwd):
     authkey = PBKDF2(pwd, salt)
     database.add_profile(profile_name_hash,salt,authkey)
 
-def print_database():
-    database.print_all()
 
 def authenticate(pwd):
     salt = database.get_salt(profile_name_hash)
@@ -94,12 +92,10 @@ def retrieve_pwd(URL, username, master_password):
 
 
 
-print("\nWelcome to the Password Farm where we work from dawn to dusk to protect your passwords!")
-print("usage note: at any point type exit to quit out of the program")
+print("Welcome to the Password Farm where we work from dawn to dusk to protect your passwords!")
+# print("usage note: at any point type exit to quit out of the program")
 
-
-print_database()
-
+# database.print_all()
 
 profile_name = input("Enter your profile name: ")
 profile_name_hash = hash(profile_name)
@@ -107,8 +103,9 @@ profile_name_hash = hash(profile_name)
 
 if(not database.exists(profile_name_hash)):
     print("A Profile with given username does not exist.")
-    answer = input("Would you like to create a password management profile? (y or n)\n")
+    answer = input("Would you like to create a password management profile ('y' or 'n')? ")
     if('y' in answer):
+        print("Password specifications: >=8 characters, >=1 character of: UPPERCASE, lowercase, number, and special)")
         password = getpass.getpass("Enter the MASTER password for this profile: ")
         while(not valid(password)):
             print("Password does not meet specifications.")
@@ -126,7 +123,7 @@ else:
         sys.exit(2)
     database.set_active_profile(profile_name_hash)
 
-print("\nYou are INNN\n")
+print("You are INNN\n")
 
 response = input("Would you like to add data for an account ('a') or retrieve a saved password ('r')? ")
 while(response != "exit"):
@@ -137,10 +134,11 @@ while(response != "exit"):
         response = input("Would you like to provide a password for this account ('p') or have one randomly generated ('r')? ")
         password = ""
         if(response == 'p'):
+            print("Password specifications: more than 8 characters, contain at least 1 character of: UPPERCASE, lowercase, number, and special)")
             password = getpass.getpass("Enter your password for this account:")
             while(not valid(password)):
                 print("Password does not meet specifications.")
-                password = getpass.getpass("Enter your password for this account: ")
+                password = getpass.getpass("Enter your password for this account:")
         elif(response == 'r'):
             while(not valid(password)):
                 password = get_random_password()
@@ -158,13 +156,13 @@ while(response != "exit"):
         password = retrieve_pwd(url, username, master_password)
         if(password == None):
             print("No account found with that URL and Username.")
-        #copies password to user's clipboard
-        # pyperclip.copy(password)
+
         else:
-            print(password)
-            password = get_random_bytes(len(password))
-        #TODO: Query database to find whether such a user exists
+            pyperclip.copy(password)
+            print("The password for this account has been copied to your clipboard.")
+        password = get_random_bytes(len(password))
+        print()
     else:
-        print("Input not recognized. Please type a valid command ('a', 'r', or 'exit')\n")
+        print("Input not recognized. Please type a valid command ('a' or 'r')\n")
 
     response = input("Would you like to add data for an account ('a') or retrieve a saved password ('r')? ")
