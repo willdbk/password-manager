@@ -40,9 +40,7 @@ def hash(str):
 
 def add_profile(pwd):
     salt = get_random_bytes(8)
-    start_t = time.time()
     authkey = PBKDF2(pwd, salt, 16, 2000000)
-    print("time: ", (time.time()-start_t))
     database.add_profile(profile_name_hash,salt,authkey)
 
 
@@ -93,7 +91,7 @@ def retrieve_pwd(URL, username, master_password):
 
 
 
-print("Welcome to the Password Farm where we work from dawn to dusk to protect your passwords!")
+print("Welcome to the Password Farm where we work from dawn to dusk (and dusk and dawn) to protect your passwords!")
 
 profile_name = input("Enter your profile name: ")
 profile_name_hash = hash(profile_name)
@@ -108,6 +106,8 @@ if(not database.exists(profile_name_hash)):
         while(not valid(password)):
             print("Password does not meet specifications.")
             password = getpass.getpass("Enter the MASTER password for this profile: ")
+            if(password == "exit"):
+                sys.exit(2)
         add_profile(password)
         password = get_random_bytes(len(password))
     else:
@@ -134,7 +134,7 @@ while(response != "exit"):
         response = input("Would you like to provide a password for this account ('p') or have one randomly generated ('r')? ")
         password = ""
         if(response == 'p'):
-            print("Password specifications: more than 8 characters, contain at least 1 character of: UPPERCASE, lowercase, number, and special)")
+            print("Password specifications: >=8 characters, >=1 character of: UPPERCASE, lowercase, number, and special)")
             password = getpass.getpass("Enter your password for this account:")
             while(not valid(password)):
                 print("Password does not meet specifications.")
@@ -145,7 +145,7 @@ while(response != "exit"):
         master_password = getpass.getpass("Enter your MASTER password: ")
         authenticated = authenticate(master_password)
         while(not authenticated):
-            print("Incorrect password.")
+            print("Incorrect password. Type 'exit' to exit.")
             master_password = getpass.getpass("Enter your MASTER password: ")
             authenticated = authenticate(master_password)
             master_password = get_random_bytes(len(password))

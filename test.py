@@ -26,4 +26,4 @@ for x in range(0,100):
     salt = get_random_bytes(8)
     authkey = PBKDF2(get_random_password(), salt, 16, 2000000)
     print(time.time() - start_t)
-print(time.time()- start_t)
+print("Average time: ", (time.time()- start_t)/100)
