@@ -120,7 +120,7 @@ else:
         print("Incorrect password.")
         master_password = getpass.getpass("Enter your MASTER password: ")
         authenticated = authenticate(master_password)
-    master_password = get_random_bytes(len(password))
+    master_password = get_random_bytes(len(master_password))
     database.set_active_profile(profile_name_hash)
 
 print("You are IN\n")
@@ -148,7 +148,7 @@ while(response != "exit"):
             print("Incorrect password. Type 'exit' to exit.")
             master_password = getpass.getpass("Enter your MASTER password: ")
             authenticated = authenticate(master_password)
-            master_password = get_random_bytes(len(password))
+            master_password = get_random_bytes(len(master_password))
         add_account(url, username, password, master_password)
         print("Account added\n")
     elif(response == 'r'):
