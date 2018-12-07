@@ -10,7 +10,7 @@ class Database:
         self.column_salt = 'profile_salt'
         self.column_auth_key = 'authentication_key'
         self.column_file_ref = 'profile_file_ref' # Reference to account sql file for each account
-        self.field_type = 'TEXT' # CHANGE BACK TO BLOB!!! (or do we have to?)
+        self.field_type = 'TEXT'
         # Column names for account databases
 
         # Account has 5 fields: hash(URL), hash(username), salt, nonce, enc(pwd)
@@ -74,7 +74,7 @@ class Database:
             c = self.conn.cursor()
             c.execute('SELECT {cw} FROM {tn} WHERE {cn}="{nh}"'.\
             format(cw=column_name,tn=self.table_name,cn=self.column_name_hash,nh=name_hash))
-            return c.fetchone()[0] #is this correct? (does not work when there are multiple accounts with the same prof ref... which there should never be)
+            return c.fetchone()[0]
         else:
             raise ValueError('ERROR: no value for column' + column_name + " found under account hash "+name_hash)
 
@@ -125,7 +125,7 @@ class Database:
             c.execute("ALTER TABLE {tn} ADD COLUMN {cn} {ct}"\
             .format(tn=self.prof_table_name, cn=self.column_prof_enc_pwd, ct=self.field_type))
         except:
-            print("table already exists")
+            print("Table already exists")
 
         # committing changes and closing the connection
         self.conn.commit()
@@ -147,7 +147,7 @@ class Database:
         format(cw=column_name,tn=self.prof_table_name,cn=self.column_prof_URL_hash,nh=URL_hash,uh=self.column_prof_username_hash,cuh=username_hash))
         output = c.fetchone();
         if(output is not None):
-            return output[0] #is this correct? (does not work when there are multiple accounts with the same prof ref... which there should never be)
+            return output[0]
         return None
 
     def get_account_enc_pwd(self, URL_hash, username_hash):

@@ -3,6 +3,7 @@ import random
 import getpass
 import sqlite3
 import sys, getopt, random
+import time
 from base64 import b64encode, b64decode
 from Crypto.Protocol.KDF import PBKDF2
 from Crypto.Random import get_random_bytes
@@ -20,7 +21,7 @@ database = db.Database()
 def get_random_password():
     s = "abcdefghijklmnopqrstuvwxyz01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()?"
     passlen = 12
-    p =  "".join(random.sample(s,passlen)) # cryptographically secure???
+    p =  "".join(random.sample(s,passlen))
     return p
 
 def valid(pwd_str):
@@ -39,13 +40,15 @@ def hash(str):
 
 def add_profile(pwd):
     salt = get_random_bytes(8)
-    authkey = PBKDF2(pwd, salt)
+    start_t = time.time()
+    authkey = PBKDF2(pwd, salt, 16, 2000000)
+    print("time: ", (time.time()-start_t))
     database.add_profile(profile_name_hash,salt,authkey)
 
 
 def authenticate(pwd):
     salt = database.get_salt(profile_name_hash)
-    authkey = PBKDF2(pwd, salt)
+    authkey = PBKDF2(pwd, salt, 16, 2000000)
     if(database.get_authkey(profile_name_hash) == authkey):
         return True;
     return False;
@@ -54,13 +57,12 @@ def authenticate(pwd):
 # the pwd is encrypted with a key generated from PBKDF2 using the salt and the master_password
 # then pwd is then encrypted in CTR mode with the nonce
 def add_account(URL, username, pwd, master_password):
-    #these references to the database aren't right
     URL_hash = hash(URL)
     username_hash = hash(username)
     salt = get_random_bytes(8)
     nonce = get_random_bytes(8)
 
-    enc_key = PBKDF2(master_password, salt)
+    enc_key = PBKDF2(master_password, salt, 16, 2000000)
     # create a counter object and set the nonce as its prefix and set the initial counter value to 0
     ctr = Counter.new(64, prefix=nonce, initial_value=0)
     cipher = AES.new(enc_key, AES.MODE_CTR, counter=ctr)
@@ -71,7 +73,6 @@ def add_account(URL, username, pwd, master_password):
 
 
 def retrieve_pwd(URL, username, master_password):
-    #these references to the database aren't right
     URL_hash = hash(URL)
     username_hash = hash(username)
 
@@ -81,7 +82,7 @@ def retrieve_pwd(URL, username, master_password):
     nonce = database.get_account_nonce(URL_hash, username_hash)
     enc_pwd = database.get_account_enc_pwd(URL_hash, username_hash)
 
-    dec_key = PBKDF2(master_password, salt)
+    dec_key = PBKDF2(master_password, salt, 16, 2000000)
     # create a counter object and set the nonce as its prefix and set the initial counter value to 0
     ctr = Counter.new(64, prefix=nonce, initial_value=0)
     cipher = AES.new(dec_key, AES.MODE_CTR, counter=ctr)
@@ -93,14 +94,11 @@ def retrieve_pwd(URL, username, master_password):
 
 
 print("Welcome to the Password Farm where we work from dawn to dusk to protect your passwords!")
-# print("usage note: at any point type exit to quit out of the program")
-
-# database.print_all()
 
 profile_name = input("Enter your profile name: ")
 profile_name_hash = hash(profile_name)
 
-
+# Adding new database if the user does not exist yet
 if(not database.exists(profile_name_hash)):
     print("A Profile with given username does not exist.")
     answer = input("Would you like to create a password management profile ('y' or 'n')? ")
@@ -114,16 +112,18 @@ if(not database.exists(profile_name_hash)):
         password = get_random_bytes(len(password))
     else:
         sys.exit(2)
+# If user exists, then prompt them to log in
 else:
-    password = getpass.getpass("Enter your MASTER password: ")
-    authenticated = authenticate(password)
-    password = get_random_bytes(len(password))
-    if(not authenticated):
-        print("Incorrect Password. Session Terminated.")
-        sys.exit(2)
+    master_password = getpass.getpass("Enter your MASTER password: ")
+    authenticated = authenticate(master_password)
+    while(not authenticated):
+        print("Incorrect password.")
+        master_password = getpass.getpass("Enter your MASTER password: ")
+        authenticated = authenticate(master_password)
+    master_password = get_random_bytes(len(password))
     database.set_active_profile(profile_name_hash)
 
-print("You are INNN\n")
+print("You are IN\n")
 
 response = input("Would you like to add data for an account ('a') or retrieve a saved password ('r')? ")
 while(response != "exit"):
@@ -144,9 +144,11 @@ while(response != "exit"):
                 password = get_random_password()
         master_password = getpass.getpass("Enter your MASTER password: ")
         authenticated = authenticate(master_password)
-        if(not authenticated):
-            print("Incorrect Password. Session Terminated.")
-            sys.exit(2)
+        while(not authenticated):
+            print("Incorrect password.")
+            master_password = getpass.getpass("Enter your MASTER password: ")
+            authenticated = authenticate(master_password)
+            master_password = get_random_bytes(len(password))
         add_account(url, username, password, master_password)
         print("Account added\n")
     elif(response == 'r'):
@@ -158,9 +160,11 @@ while(response != "exit"):
             print("No account found with that URL and Username.")
 
         else:
+            # Copy password to system's clipboard
             pyperclip.copy(password)
             print("The password for this account has been copied to your clipboard.")
-        password = get_random_bytes(len(password))
+            # Remove password from memory?
+            password = get_random_bytes(len(password))
         print()
     else:
         print("Input not recognized. Please type a valid command ('a' or 'r')\n")
